@@ -77,31 +77,46 @@ async function sendContactViaBackend(payload) {
     const submitBtn = document.getElementById("submitbtn");
     try {
         const apiBaseUrl = (window.API_BASE_URL || "http://127.0.0.1:5000").replace(/\/$/, "");
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 12000);
+
         const res = await fetch(`${apiBaseUrl}/api/contact`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
+            signal: controller.signal
         });
 
-        const data = await res.json();
+        clearTimeout(timeoutId);
+
+        let data = null;
+        const contentType = (res.headers.get("content-type") || "").toLowerCase();
+        if (contentType.includes("application/json")) {
+            data = await res.json();
+        } else {
+            const text = await res.text();
+            data = { message: text };
+        }
 
         if (!res.ok) {
             if (responseEl) {
                 responseEl.style.color = "#dc2626";
-                responseEl.textContent = data.message || "Failed to send message.";
+                responseEl.textContent = (data && data.message) ? data.message : `Request failed (${res.status})`;
             }
             return;
         }
 
         if (responseEl) {
             responseEl.style.color = "#16a34a";
-            responseEl.textContent = data.message || "Message sent successfully.";
+            responseEl.textContent = (data && data.message) ? data.message : "Message sent successfully.";
         }
         showPopup();
     } catch (err) {
         if (responseEl) {
             responseEl.style.color = "#dc2626";
-            responseEl.textContent = "Network/Server error. Try again later.";
+            responseEl.textContent = err && err.name === 'AbortError'
+                ? "Request timed out. Try again."
+                : "Network/Server error. Try again later.";
         }
     } finally {
         if (submitBtn) {
