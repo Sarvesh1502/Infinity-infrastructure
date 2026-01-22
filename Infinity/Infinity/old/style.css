@@ -1671,6 +1671,15 @@ h1{
   background: #1a1a1a;
 }
 
+.album-section .video-item {
+  grid-column: 1 / -1;
+  aspect-ratio: 16 / 9;
+}
+
+.album-section .photo-item {
+  display: none;
+}
+
 .gallery-overlay {
   position: absolute;
   inset: 0;

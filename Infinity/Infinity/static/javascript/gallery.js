@@ -22,9 +22,17 @@ function playVideo(src, caption) {
     const captionText = document.getElementById("videoCaption");
     
     video.src = src;
+    video.load();
     captionText.textContent = caption;
     modal.style.display = "flex";
     document.body.style.overflow = "hidden";
+
+    const playPromise = video.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(() => {
+            // Autoplay may be blocked; user can press play.
+        });
+    }
 }
 
 function closeVideoPlayer() {
@@ -32,6 +40,7 @@ function closeVideoPlayer() {
     const video = document.getElementById("galleryVideo");
     modal.style.display = "none";
     video.pause();
+    video.currentTime = 0;
     document.body.style.overflow = "";
 }
 

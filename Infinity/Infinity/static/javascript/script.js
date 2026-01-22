@@ -1,10 +1,13 @@
 
-document.getElementById("submitbtn").addEventListener("click", ValidateForm);
-
 // Initialize Lucide icons when DOM is ready
 document.addEventListener("DOMContentLoaded", function() {
     if (window.lucide) {
         lucide.createIcons();
+    }
+
+    const submitBtn = document.getElementById("submitbtn");
+    if (submitBtn) {
+        submitBtn.addEventListener("click", ValidateForm);
     }
 });
 
@@ -61,7 +64,8 @@ function ValidateForm() {
 
 async function sendContactViaBackend(payload) {
     try {
-        const res = await fetch("http://127.0.0.1:5000/api/contact", {
+        const apiBaseUrl = (window.API_BASE_URL || "http://127.0.0.1:5000").replace(/\/$/, "");
+        const res = await fetch(`${apiBaseUrl}/api/contact`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
@@ -154,5 +158,87 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         });
     }
+});
+
+// Navigation: smooth scroll and active link handling (scrollspy)
+document.addEventListener("DOMContentLoaded", function () {
+    const navLinks = Array.from(document.querySelectorAll('.main-nav .nav-link'));
+    if (!navLinks.length) return;
+
+    const sectionIds = ['#about-section', '#service-section', '#testimonals-section', '#team-section', '#contact-form'];
+    const sections = sectionIds
+        .map(id => document.querySelector(id))
+        .filter(Boolean);
+
+    const setActive = (href) => {
+        navLinks.forEach(l => l.classList.remove('active'));
+        const active = navLinks.find(l => l.getAttribute('href') === href);
+        if (active) active.classList.add('active');
+    };
+
+    // Click behavior: smooth scroll and active toggle
+    navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            const href = link.getAttribute('href');
+            // Home link typically points to index.html; handle as scroll to top
+            if (href && (href === 'index.html' || href === './index.html' || href === '/index.html' || href === '#top')) {
+                e.preventDefault();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                setActive(href);
+                return;
+            }
+
+            if (href && href.startsWith('#')) {
+                const target = document.querySelector(href);
+                if (target) {
+                    e.preventDefault();
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    setActive(href);
+                }
+            }
+        });
+    });
+
+    // Scrollspy: highlight link for the section in view
+    let ticking = false;
+    const onScroll = () => {
+        if (ticking) return;
+        ticking = true;
+        window.requestAnimationFrame(() => {
+            const scrollPos = window.scrollY || document.documentElement.scrollTop || 0;
+            const offset = 110; // approximate header + spacing
+
+            // If near top, mark Home active
+            const firstSectionTop = sections.length ? sections[0].offsetTop : 0;
+            if (scrollPos < Math.max(0, firstSectionTop - offset)) {
+                // Try to match whichever home href exists
+                const home = navLinks.find(l => ['index.html', './index.html', '/index.html', '#top'].includes(l.getAttribute('href')));
+                navLinks.forEach(l => l.classList.remove('active'));
+                if (home) home.classList.add('active');
+                ticking = false;
+                return;
+            }
+
+            // Find current section
+            let currentHref = null;
+            for (let i = sections.length - 1; i >= 0; i--) {
+                const sec = sections[i];
+                if (scrollPos + offset >= sec.offsetTop) {
+                    currentHref = `#${sec.id}`;
+                    break;
+                }
+            }
+
+            if (currentHref) {
+                setActive(currentHref);
+            }
+
+            ticking = false;
+        });
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    // Initialize state on load
+    onScroll();
 });
 

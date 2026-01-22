@@ -37,11 +37,15 @@
 }
 
 /* Base Styles */
+html {
+    scroll-behavior: smooth;
+}
 body {
     font-family: var(--font-body);
     line-height: 1.6;
     color: var(--dark);
-    background-color: #fff;
+    /* Remove all background images (no watermark) */
+    background: linear-gradient(rgba(243, 233, 228, 0.9), rgba(243, 233, 228, 0.9));
     overflow-x: hidden;
 }
 
@@ -298,7 +302,7 @@ a:hover {
     min-height: 100vh;
     display: flex;
     align-items: center;
-    background: linear-gradient(135deg, #f6f9fc 0%, #eef2f7 100%);
+    background: linear-gradient(rgba(243, 233, 228, 0.75), rgba(243, 233, 228, 0.75));
     padding: calc(var(--header-height) + var(--spacing-xl)) 0 var(--spacing-xl);
     position: relative;
     overflow: hidden;
@@ -395,6 +399,13 @@ a:hover {
     object-fit: cover;
 }
 
+.card-img.profile-img {
+    height: 190px;
+    object-fit: contain;
+    object-position: center;
+    background: #ffffff;
+}
+
 .card-body {
     padding: var(--spacing-md);
 }
@@ -435,6 +446,26 @@ a:hover {
     background: linear-gradient(90deg, var(--primary), var(--secondary));
     border-radius: var(--radius-full);
 }
+
+#shrishila-portfolio .section-title::after {
+    display: none;
+}
+
+/* Ensure anchor-scrolled sections are not hidden behind fixed header */
+section {
+    scroll-margin-top: 90px;
+}
+
+/* Subtle infrastructure watermarks */
+.services {
+    position: relative;
+}
+
+.team-hero {
+    position: relative;
+}
+
+/* Visible infrastructure icons removed for a cleaner professional look */
 
 /* Responsive Design */
 @media (max-width: 1024px) {

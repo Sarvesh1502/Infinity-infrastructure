@@ -4,9 +4,10 @@ from email.message import EmailMessage
 import smtplib
 import os
 from dotenv import load_dotenv
+from pathlib import Path
 
-# Load environment variables
-load_dotenv()
+# Load environment variables (from this file's directory)
+load_dotenv(dotenv_path=Path(__file__).with_name('.env'))
 
 app = Flask(__name__)
 CORS(app)
@@ -14,6 +15,7 @@ CORS(app)
 EMAIL_USER = os.getenv("EMAIL_USER")
 EMAIL_PASS = os.getenv("EMAIL_PASS")
 OWNER_EMAIL = os.getenv("OWNER_EMAIL")
+DISABLE_EMAIL = os.getenv("DISABLE_EMAIL", "0") == "1"
 
 
 def send_owner_email(name, email, subject, message):
@@ -50,8 +52,31 @@ def send_user_autoreply(name, email):
         server.send_message(msg)
 
 
-@app.route("/api/contact", methods=["POST"])
+@app.route("/", methods=["GET"])
+def root():
+    return jsonify({
+        "status": "ok",
+        "service": "Infinity Infrastructure API",
+        "endpoints": {
+            "health": "/health",
+            "contact": "/api/contact (POST)"
+        }
+    }), 200
+
+
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"status": "ok"}), 200
+
+
+@app.route("/api/contact", methods=["GET", "POST"])
 def contact():
+    if request.method == "GET":
+        return jsonify({
+            "success": False,
+            "message": "Use POST /api/contact with JSON: {name, email, subject, message}"
+        }), 200
+
     data = request.get_json()
 
     name = data.get("name", "").strip()
@@ -61,6 +86,12 @@ def contact():
 
     if not name or not email or not message:
         return jsonify({"success": False, "message": "All fields required"}), 400
+
+    if DISABLE_EMAIL:
+        return jsonify({
+            "success": True,
+            "message": "Message received (email sending disabled)"
+        }), 200
 
     try:
         send_owner_email(name, email, subject, message)
