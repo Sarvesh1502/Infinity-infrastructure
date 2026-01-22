@@ -9,6 +9,14 @@ document.addEventListener("DOMContentLoaded", function() {
     if (submitBtn) {
         submitBtn.addEventListener("click", ValidateForm);
     }
+
+    // Warm up the backend (Render free tier can be asleep and take time to wake)
+    try {
+        const apiBaseUrl = (window.API_BASE_URL || "http://127.0.0.1:5000").replace(/\/$/, "");
+        fetch(`${apiBaseUrl}/health`, { method: "GET" }).catch(() => {});
+    } catch (_) {
+        // ignore
+    }
 });
 
 function ValidateForm() {
@@ -75,10 +83,11 @@ function ValidateForm() {
 async function sendContactViaBackend(payload) {
     const responseEl = document.getElementById("responseMessage");
     const submitBtn = document.getElementById("submitbtn");
-    try {
-        const apiBaseUrl = (window.API_BASE_URL || "http://127.0.0.1:5000").replace(/\/$/, "");
+
+    const apiBaseUrl = (window.API_BASE_URL || "http://127.0.0.1:5000").replace(/\/$/, "");
+    const postOnce = async (timeoutMs) => {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 12000);
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
         const res = await fetch(`${apiBaseUrl}/api/contact`, {
             method: "POST",
@@ -88,6 +97,27 @@ async function sendContactViaBackend(payload) {
         });
 
         clearTimeout(timeoutId);
+        return res;
+    };
+
+    try {
+        // First attempt: longer timeout to allow cold start
+        let res;
+        try {
+            res = await postOnce(45000);
+        } catch (err) {
+            // If it timed out, ping /health once (wake up) and retry
+            if (err && err.name === 'AbortError') {
+                try {
+                    await fetch(`${apiBaseUrl}/health`, { method: "GET" });
+                } catch (_) {
+                    // ignore
+                }
+                res = await postOnce(45000);
+            } else {
+                throw err;
+            }
+        }
 
         let data = null;
         const contentType = (res.headers.get("content-type") || "").toLowerCase();
@@ -115,7 +145,7 @@ async function sendContactViaBackend(payload) {
         if (responseEl) {
             responseEl.style.color = "#dc2626";
             responseEl.textContent = err && err.name === 'AbortError'
-                ? "Request timed out. Try again."
+                ? "Request timed out (server waking up). Try again in 10 seconds."
                 : "Network/Server error. Try again later.";
         }
     } finally {
