@@ -53,6 +53,16 @@ function ValidateForm() {
 
     if (!ok) return;
 
+    const responseEl = document.getElementById("responseMessage");
+    const submitBtn = document.getElementById("submitbtn");
+    if (responseEl) {
+        responseEl.style.color = "#111827";
+        responseEl.textContent = "Sending...";
+    }
+    if (submitBtn) {
+        submitBtn.disabled = true;
+    }
+
     // Submit form via Formspree
     sendContactViaBackend({
         name: fullName,
@@ -63,6 +73,8 @@ function ValidateForm() {
 }
 
 async function sendContactViaBackend(payload) {
+    const responseEl = document.getElementById("responseMessage");
+    const submitBtn = document.getElementById("submitbtn");
     try {
         const apiBaseUrl = (window.API_BASE_URL || "http://127.0.0.1:5000").replace(/\/$/, "");
         const res = await fetch(`${apiBaseUrl}/api/contact`, {
@@ -74,14 +86,27 @@ async function sendContactViaBackend(payload) {
         const data = await res.json();
 
         if (!res.ok) {
-            document.getElementById("responseMessage").textContent = data.message;
+            if (responseEl) {
+                responseEl.style.color = "#dc2626";
+                responseEl.textContent = data.message || "Failed to send message.";
+            }
             return;
         }
 
+        if (responseEl) {
+            responseEl.style.color = "#16a34a";
+            responseEl.textContent = data.message || "Message sent successfully.";
+        }
         showPopup();
     } catch (err) {
-        document.getElementById("responseMessage").textContent =
-            "Server error. Try again later.";
+        if (responseEl) {
+            responseEl.style.color = "#dc2626";
+            responseEl.textContent = "Network/Server error. Try again later.";
+        }
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+        }
     }
 }
 
