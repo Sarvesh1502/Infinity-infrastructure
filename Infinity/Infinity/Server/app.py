@@ -10,7 +10,18 @@ from pathlib import Path
 load_dotenv(dotenv_path=Path(__file__).with_name('.env'))
 
 app = Flask(__name__)
-CORS(app)
+ALLOWED_ORIGINS = [
+    "https://infinityinfra.netlify.app",
+    "http://127.0.0.1:8081",
+    "http://localhost:8081",
+]
+
+CORS(
+    app,
+    resources={r"/api/*": {"origins": ALLOWED_ORIGINS}},
+    methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type"],
+)
 
 EMAIL_USER = os.getenv("EMAIL_USER")
 EMAIL_PASS = os.getenv("EMAIL_PASS")
@@ -69,7 +80,7 @@ def health():
     return jsonify({"status": "ok"}), 200
 
 
-@app.route("/api/contact", methods=["GET", "POST"])
+@app.route("/api/contact", methods=["GET", "POST", "OPTIONS"])
 def contact():
     if request.method == "GET":
         return jsonify({
