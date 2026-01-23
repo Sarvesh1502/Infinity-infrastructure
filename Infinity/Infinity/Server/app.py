@@ -45,7 +45,7 @@ def send_owner_email(name, email, subject, message):
         f"Message:\n{message}"
     )
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as server:
         server.login(EMAIL_USER, EMAIL_PASS)
         server.send_message(msg)
 
@@ -62,7 +62,7 @@ def send_user_autoreply(name, email):
         "Regards,\nInfinity Infrastructure Team"
     )
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as server:
         server.login(EMAIL_USER, EMAIL_PASS)
         server.send_message(msg)
 
@@ -105,7 +105,9 @@ def contact():
     if not name or not email or not message:
         return jsonify({"success": False, "message": "All fields required"}), 400
 
-    if DISABLE_EMAIL:
+    disable_email_effective = DISABLE_EMAIL or not EMAIL_USER or not EMAIL_PASS or not OWNER_EMAIL
+
+    if disable_email_effective:
         return jsonify({
             "success": True,
             "message": "Message received (email sending disabled)"
