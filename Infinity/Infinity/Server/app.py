@@ -18,7 +18,11 @@ ALLOWED_ORIGINS = [
 
 CORS(
     app,
-    resources={r"/api/*": {"origins": ALLOWED_ORIGINS}},
+    resources={
+        r"/api/*": {"origins": ALLOWED_ORIGINS},
+        r"/health": {"origins": ALLOWED_ORIGINS},
+        r"/": {"origins": ALLOWED_ORIGINS},
+    },
     methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type"],
 )
@@ -82,13 +86,16 @@ def health():
 
 @app.route("/api/contact", methods=["GET", "POST", "OPTIONS"])
 def contact():
+    if request.method == "OPTIONS":
+        return "", 200
+
     if request.method == "GET":
         return jsonify({
             "success": False,
             "message": "Use POST /api/contact with JSON: {name, email, subject, message}"
         }), 200
 
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
 
     name = data.get("name", "").strip()
     email = data.get("email", "").strip()
